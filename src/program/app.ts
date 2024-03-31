@@ -1,5 +1,5 @@
 import { Connection, Keypair, PublicKey, sendAndConfirmTransaction, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
-import * as crypto from 'crypto';
+// import * as crypto from 'crypto';
 import {encrypt, decrypt} from './cipherManager';
 
 const QUICKNODE_RPC = 'https://shy-light-replica.solana-devnet.quiknode.pro/030e1771d9e00e663f3acdba87cfd6d494b7214a/';
@@ -9,8 +9,8 @@ const secret = [77,185,241,187,51,78,106,44,83,164,194,231,52,51,32,205,150,205,
 const fromKeypair = Keypair.fromSecretKey(new Uint8Array(secret));
 
 // const algorithm = 'aes-256-cbc';
-const key = crypto.randomBytes(32);
-const iv = crypto.randomBytes(16);
+// const key = crypto.randomBytes(32);
+// const iv = crypto.randomBytes(16);
 
 async function logMemo (message: string){
 	//1. Create solana transaction
