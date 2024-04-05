@@ -4,14 +4,20 @@ import * as walletAdapterReact from '@solana/wallet-adapter-react';
 import * as walletAdapterWallets from '@solana/wallet-adapter-wallets';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { toast } from 'react-toastify';
 import { logMemo } from './write_memo';
 import { fetchMemo } from './read_memo';
 
+const quicknode_rpc = 'https://shy-light-replica.solana-devnet.quiknode.pro/030e1771d9e00e663f3acdba87cfd6d494b7214a/';
+const quicknode_connection = new web3.Connection(quicknode_rpc);
+
 const Starter = () => {
-    const [balance, setBalance] = React.useState<number | null>(0);
     const endpoint = web3.clusterApiUrl('devnet');
+    const [balance, setBalance] = React.useState<number | null>(0);
     const [inputValue, setInputValue] = React.useState<string>("");
-    // const [input, setInput] = React.useState("");
+    const [account, setAccount] = React.useState('');
+    const [amount, setAmount] = React.useState(0);
+    const [txSig, setTxSig] = React.useState('');
     
     const wallets = [
         new walletAdapterWallets.PhantomWalletAdapter(),
@@ -22,21 +28,47 @@ const Starter = () => {
         setInputValue(event.target.value);
     };
     
-    const {connection} = useConnection();
-    const {publicKey} = useWallet();
+    // const {connection} = useConnection();
+    const {publicKey, sendTransaction} = useWallet();
 
     React.useEffect(() => {
         const getInfo = async () => {
-            if (connection && publicKey) {
-                const info = await connection.getAccountInfo(publicKey);
+            if (quicknode_connection && publicKey) {
+                const info = await quicknode_connection.getAccountInfo(publicKey);
                 setBalance(info!.lamports / web3.LAMPORTS_PER_SOL);
             }
         };
         getInfo();
-    }, [connection, publicKey]);
+    }, [quicknode_connection, publicKey]);
 
-    function handleButtonOnClick(){
-        logMemo(inputValue);
+    async function handleTransaction(){
+        // logMemo(inputValue);
+        if (!quicknode_connection || !publicKey) {
+            toast.error('Please connect your wallet.');
+            return;
+        }
+
+        const transaction = new web3.Transaction();
+        const instruction = new web3.TransactionInstruction({
+            keys: [{ pubkey: publicKey, isSigner: true, isWritable: true }],
+                data: Buffer.from(inputValue, "utf-8"),
+                programId: new web3.PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
+        });
+
+        transaction.add(instruction);
+
+        try{
+            const signature = await sendTransaction(transaction, quicknode_connection);
+            setTxSig(signature);
+            console.log(signature);
+        }
+        catch (error){
+            console.log(error);
+            toast.error('Writing failed!');
+        }
+        finally {
+            
+        }
     }
     
     return (
@@ -97,7 +129,7 @@ const Starter = () => {
                                                     fontSize: '15px'
                                                 }}>{inputValue.length}/300</p>
                                             <div style={{ display: 'flex', justifyContent: 'center'}}>
-                                                <button onClick={handleButtonOnClick}>SEND</button>
+                                                <button onClick={handleTransaction}>SEND</button>
                                             </div>
                                             
                                         </ul>

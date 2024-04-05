@@ -20,6 +20,12 @@ export async function logMemo (message: string){
 	//   });
 
 	//3. Add memo instruction
+	const instruction = new TransactionInstruction({
+		keys: [{ pubkey: fromKeypair.publicKey, isSigner: true, isWritable: true }],
+			data: Buffer.from(encryptedMessage, "utf-8"),
+			programId: new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
+	})
+
 	await tx.add(
 		new TransactionInstruction({
 			keys: [{ pubkey: fromKeypair.publicKey, isSigner: true, isWritable: true }],
