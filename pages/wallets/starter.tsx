@@ -5,8 +5,8 @@ import * as walletAdapterWallets from '@solana/wallet-adapter-wallets';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { toast } from 'react-toastify';
-import { logMemo } from './write_memo';
-import { fetchMemo } from './read_memo';
+// import { logMemo } from './write_memo';
+// import { fetchMemo } from './read_memo';
 
 const quicknode_rpc = 'https://shy-light-replica.solana-devnet.quiknode.pro/030e1771d9e00e663f3acdba87cfd6d494b7214a/';
 const quicknode_connection = new web3.Connection(quicknode_rpc);
@@ -80,9 +80,9 @@ const Starter = () => {
                             <div className='grid grid-cols-1 lg:grid-cols-4 gap-4 p-4'>
                                 <div className='col-span-1 lg:col-start-2 lg:col-end-4 rounded-lg bg-[#2a302f] h-250 p-4'>
                                     {/* HEADER */}
-                                    <div className='flex justify-between items-center'>
-                                        <h2 className='text-3xl font-semibold'>
-                                            Account Info
+                                    <div>
+                                        <h2 className='text-3xl font-semibold' style={{textAlign: 'center'}}>
+                                            Keepsake
                                         </h2>
                                         {/* <WalletMultiButton className='!bg-helius-orange !rounded-xl hover:!bg-[#161b19] transition-all duration-200'/> */}
                                     </div>
@@ -105,9 +105,9 @@ const Starter = () => {
                                             <br />
                                             <hr />
                                             <br />
-                                            <p className='tracking-wider' style={{textAlign: 'center'}}>write your message here</p>
+                                            {/* <p className='tracking-wider' style={{textAlign: 'center'}}>write your message here</p> */}
                                             <li className='text-sm mt-4 flex '>
-                                                    <textarea name="message" style={
+                                                    <textarea name="message" placeholder='write your message here...' style={
                                                             {
                                                                 color: 'black',
                                                                 width: '100%',
