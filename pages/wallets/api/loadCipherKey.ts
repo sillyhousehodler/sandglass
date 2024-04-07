@@ -1,4 +1,6 @@
-export {};
+export default function EmptyPage() { 
+    return null;
+  }
 // import * as fs from 'fs';
 
 // export default function handler(req: any, res: any){

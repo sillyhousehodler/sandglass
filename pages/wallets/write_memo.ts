@@ -1,4 +1,6 @@
-export {};
+export default function EmptyPage() { 
+    return null;
+  }
 // import { Connection, Keypair, PublicKey, sendAndConfirmTransaction, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
 // import { encrypt } from './cipherManager';
 
