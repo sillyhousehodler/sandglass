@@ -14,18 +14,21 @@ import * as crypto from 'crypto';
 const test_iv = "638621152f595d98d952f237eeeca2d5";
 const test_key = "d54a627c56fbadf53f7c5b821d05992b2aaaa4c695e4d54116b6cb30827af9f7";
 
-async function loadDecryptData(testKey: string) {
-    const algorithm = 'aes-256-cdc';
-    let iv_buffer = Buffer.from(test_iv);
-    let key_buffer = Buffer.from(testKey);
-
+async function loadDecryptData(acquiredKey: string) {
+    const algorithm = 'aes-256-cbc';
+    let iv_buffer = Buffer.from(test_iv, 'hex');
+    let key_buffer = Buffer.from(acquiredKey, 'hex');
+    
     return {algorithm, key_buffer, iv_buffer};
 }
 
 async function loadEncryptData() {
-    const algorithm = 'aes-256-cdc';
-    let iv_buffer = Buffer.from(test_iv);
-    let key_buffer = Buffer.from(test_key);
+    const algorithm = 'aes-256-cbc';
+    let iv_buffer = Buffer.from(test_iv, 'hex');
+    let key_buffer = Buffer.from(test_key, 'hex');
+
+    console.log("IV Buffer : " + iv_buffer);
+    console.log("KEY_Buffer : " + key_buffer);
 
     return {algorithm, key_buffer, iv_buffer};
 }
@@ -44,9 +47,13 @@ export async function encrypt(text: string): Promise<string> {
 
 export async function decrypt(encryptedText: string, key: string): Promise<string> {
     // const decipher = crypto.createDecipheriv(algorithm, key_buffer, iv_buffer);
-    const data = await loadDecryptData(key);
-    const decipher = crypto.createCipheriv(data.algorithm, data.key_buffer, data.iv_buffer);
-    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-    decrypted += decipher.final('utf-8');
-    return decrypted;
+    if (key == ''){
+        return encryptedText;
+    }else{
+        const data = await loadDecryptData(key);
+        const decipher = crypto.createCipheriv(data.algorithm, data.key_buffer, data.iv_buffer);
+        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+        decrypted += decipher.final('utf-8');
+        return decrypted;
+    }
 }

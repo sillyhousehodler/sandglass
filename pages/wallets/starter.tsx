@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as crypto from 'crypto';
 import * as web3 from '@solana/web3.js';
 import * as walletAdapterReact from '@solana/wallet-adapter-react';
 import * as walletAdapterWallets from '@solana/wallet-adapter-wallets';
@@ -13,20 +14,26 @@ const result = require('dotenv').config();
 const quicknode_rpc = 'https://shy-light-replica.solana-devnet.quiknode.pro/030e1771d9e00e663f3acdba87cfd6d494b7214a/';
 const quicknode_connection = new web3.Connection(quicknode_rpc);
 
+interface messageDataObject {
+    pKey: web3.PublicKey;
+    unlockTime: number;
+}
+
 const Starter = () => {
     const endpoint = web3.clusterApiUrl('devnet');
     const [balance, setBalance] = React.useState<number | null>(0);
     const [inputValue, setInputValue] = React.useState<string>("");
-    const [writerAddress, setWriterAddress] = React.useState<string>("");
+    // const [writerAddress, setWriterAddress] = React.useState<string>("");
     const [readerAddress, setReaderAddress] = React.useState<string>("");
-    const [confirmedReaderAddress, setConfirmedReaderAddress] = React.useState<string>("");
+    // const [confirmedReaderAddress, setConfirmedReaderAddress] = React.useState<string>("");
     const [timeAfter, setTimeAfter] = React.useState<number>();
     // const [account, setAccount] = React.useState('');
     const [txSig, setTxSig] = React.useState('');
     const [displayTime, setDisplayTime] = React.useState(new Date());
 
-    let writeTime = Date.now();
-    let readerKey = '';
+    let readerKey = 's'; //key for reader to decrypt message.
+    let messageMap: Map<string, messageDataObject> = new Map<string, messageDataObject>();
+    let readerMessageBox = document.getElementById('reader-message-box');
     
     const wallets = [
         new walletAdapterWallets.PhantomWalletAdapter(),
@@ -78,7 +85,6 @@ const Starter = () => {
 
         try {
             new web3.PublicKey(readerAddress);  //verify valid sol address
-            setConfirmedReaderAddress(readerAddress);
         } catch (error){
             console.log("Not a valid solana address");
             return;
@@ -108,8 +114,62 @@ const Starter = () => {
             
         }
 
-        writeTime = Date.now();
-        console.log("Writing time is : " + writeTime);
+        let targetTime = timeAfter? timeAfter:0;
+        targetTime += Date.now();
+        let newMessageObject: messageDataObject = {
+            pKey: publicKey,
+            unlockTime: targetTime
+        }
+        // setWriterAddress(publicKey.toString());
+        // setConfirmedReaderAddress(readerAddress);
+        // messageMap.set(readerAddress, publicKey.toString());
+        messageMap.set(readerAddress, newMessageObject);
+        console.log("Writing time is : " + newMessageObject.unlockTime);
+    }
+
+    async function checkMessage(){
+        if (!quicknode_connection || !publicKey) {
+            toast.error('Please connect your wallet.');
+            return;
+        }
+
+        let currentWalletAddr = publicKey?.toString();
+
+        if (currentWalletAddr === undefined){
+            toast.error('Wallet address reading issue');
+            return;
+        }else{
+            if (messageMap.get(currentWalletAddr) === undefined) {
+                //no message for this address
+                if (readerMessageBox){
+                    readerMessageBox.innerText = "Message box is empty..."
+                }
+            }else{
+                //there is message for this address, check time for eligibility
+                // let writerPubKeyForFetching = new web3.PublicKey(Buffer.from(messageMap.get(currentWalletAddr), "hex"));
+                let msgObject = messageMap.get(currentWalletAddr);
+                if (msgObject === undefined) return;
+                let signatureDetail = await quicknode_connection.getSignaturesForAddress(msgObject.pKey);
+                let fetchedMemo = signatureDetail[0].memo?.slice(5);
+
+                if (fetchedMemo){
+                    console.log("Fetched encrypted memo text : " + fetchedMemo);
+                }else{
+                    throw new Error("Empty string");
+                }
+                
+                if (msgObject.unlockTime >= Date.now()){
+                    //Send sym key to reader
+                    readerKey = cm.getTestKey();
+                }
+
+                fetchedMemo = (await (cm.decrypt(fetchedMemo, readerKey))).toString();
+
+                if (readerMessageBox){
+                    readerMessageBox.innerText = fetchedMemo;
+                }
+            }
+        }
     }
     
     return (
@@ -206,6 +266,10 @@ const Starter = () => {
                                             <br />
                                             {/* <p className='tracking-wider' style={{textAlign: 'center'}}>Reader's box</p> */}
                                             <h2 className='text-2xl font-semibold' style={{textAlign: 'center'}}>Reader's box</h2>
+                                            <br />
+                                                <div style={{ display: 'flex', justifyContent: 'center'}}>
+                                                    <button onClick={checkMessage}>CHECK MESSAGE</button>
+                                                </div>
                                             <div className='mt-8 bg-[#222524] border-2 border-gray-500 rounded-lg p-2'>
                                                 <ul className='p-2'>
                                                     <li className='flex justify-between'>
