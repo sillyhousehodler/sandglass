@@ -1,7 +1,7 @@
 export {};export default function EmptyPage() { 
     return null;
   }
-  // import { Connection, Keypair, PublicKey, sendAndConfirmTransaction, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
+//   import { Connection, Keypair, PublicKey, sendAndConfirmTransaction, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
 // // import * as crypto from 'crypto';
 // import {encrypt, decrypt} from './cipherManager';
 
