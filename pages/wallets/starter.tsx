@@ -215,7 +215,7 @@ const Starter = () => {
                                             <hr />
                                             <br />
                                             {/* <p className='tracking-wider' style={{textAlign: 'center'}}>Writer's message</p> */}
-                                            <h2 className='text-2xl font-semibold' style={{textAlign: 'center'}}>Writer's message</h2>
+                                            <h2 className='text-2xl font-semibold' style={{textAlign: 'center'}}>Alice's message</h2>
                                             <li className='text-sm mt-4 flex '>
                                                     <textarea name="message" placeholder='write your message here...' style={
                                                             {
@@ -270,7 +270,7 @@ const Starter = () => {
                                             <hr />
                                             <br />
                                             {/* <p className='tracking-wider' style={{textAlign: 'center'}}>Reader's box</p> */}
-                                            <h2 className='text-2xl font-semibold' style={{textAlign: 'center'}}>Reader's box</h2>
+                                            <h2 className='text-2xl font-semibold' style={{textAlign: 'center'}}>Bob's box</h2>
                                             <br />
                                                 <div style={{ display: 'flex', justifyContent: 'center'}}>
                                                     <button onClick={checkMessage} style={{color: 'green'}}>CHECK MESSAGE</button>
