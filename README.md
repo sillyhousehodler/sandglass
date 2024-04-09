@@ -20,6 +20,7 @@ Feel free to download our repository, deploy it on your local machine, and explo
 - Open [http://localhost:3000/](http://localhost:3000/) from your browser.
 - That's it.
 - [Go through the demo video here](https://www.youtube.com/watch?v=aXWSvghyrFo)
+- For the reader's public address. Please use "Eh3UKDWz4RT7PRZGyZ7SLNAzyDFHXXrbi3q277UynTuh" because it's hardcoded for simulating Bob's wallet, for this demo only.
 
 ## Gratitude
 - As novices in Solana development, we are committed to continuing our work on this project beyond the hackathon. We firmly believe in the concept and the value it can bring to Solana, Web3, and the broader community.
