@@ -27,9 +27,6 @@ async function loadEncryptData() {
     let iv_buffer = Buffer.from(test_iv, 'hex');
     let key_buffer = Buffer.from(test_key, 'hex');
 
-    console.log("IV Buffer : " + iv_buffer);
-    console.log("KEY_Buffer : " + key_buffer);
-
     return {algorithm, key_buffer, iv_buffer};
 }
 
@@ -38,6 +35,7 @@ export function getTestKey(){
 }
 
 export async function encrypt(text: string): Promise<string> {
+    console.log("incoming text chunk : " + text);
     const data = await loadEncryptData();
     const cipher = crypto.createCipheriv(data.algorithm, data.key_buffer, data.iv_buffer);
     let encrypted = cipher.update(text, 'utf8', 'hex');
@@ -45,15 +43,48 @@ export async function encrypt(text: string): Promise<string> {
     return encrypted;
 }
 
+async function splitEncrypt(text: string){
+    let splittedText = text.match(/.{1,32}/g);
+    // let encryptedChunks = splittedText?.map(chunk => encrypt(chunk));
+    let encryptedChunks = await Promise.all(splittedText?.map(chunk => encrypt(chunk)) || []);
+    let encryptedText = encryptedChunks? encryptedChunks.join(''):text;
+    console.log("returned encrypted text : " + encryptedText);
+    return encryptedText;
+}
+
+export async function runSplitEncrypt(text: string){
+    let result: string = await splitEncrypt(text);
+    return result;
+}
+
 export async function decrypt(encryptedText: string, key: string): Promise<string> {
     // const decipher = crypto.createDecipheriv(algorithm, key_buffer, iv_buffer);
     if (key == ''){
         return encryptedText;
     }else{
+        console.log("incoming encrypted chunk : " + encryptedText);
         const data = await loadDecryptData(key);
-        const decipher = crypto.createCipheriv(data.algorithm, data.key_buffer, data.iv_buffer);
+        const decipher = crypto.createDecipheriv(data.algorithm, data.key_buffer, data.iv_buffer);
         let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-        decrypted += decipher.final('utf-8');
+        console.log("LOG decrypted : " + decrypted);
+        decrypted += decipher.final('utf8');
+        console.log("added decrypted : " + decrypted);
         return decrypted;
     }
+}
+
+export async function splitDecrypt(encryptedText: string, key: string){
+    if (key == '') return encryptedText;
+    console.log("encrypted text length : " + encryptedText.length);
+    let encryptedChunks = encryptedText.match(/.{1,96}/g);
+    let decryptedChunks = await Promise.all(encryptedChunks?.map(chunk => decrypt(chunk, key)) || []);
+    let decryptedText = decryptedChunks? decryptedChunks.join(''):encryptedText;
+    console.log(decryptedText);
+    return decryptedText;
+}
+
+export async function runSplitDecrypt(text: string, key: string){
+    let result: string = await splitDecrypt(text, key);
+    console.log(result);
+    return result;
 }

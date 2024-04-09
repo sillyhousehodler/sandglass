@@ -7,6 +7,7 @@ import * as cm from './cipherManager';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { toast } from 'react-toastify';
+import { wrap } from 'module';
 const result = require('dotenv').config();
 // import { logMemo } from './write_memo';
 // import { fetchMemo } from './read_memo';
@@ -23,16 +24,16 @@ const Starter = () => {
     const endpoint = web3.clusterApiUrl('devnet');
     const [balance, setBalance] = React.useState<number | null>(0);
     const [inputValue, setInputValue] = React.useState<string>("");
-    // const [writerAddress, setWriterAddress] = React.useState<string>("");
+    const [readerBoxMessage, setReaderBoxMessage] = React.useState<string>("");
     const [readerAddress, setReaderAddress] = React.useState<string>("");
-    // const [confirmedReaderAddress, setConfirmedReaderAddress] = React.useState<string>("");
+    const [messageMap, setMessageMap] = React.useState<Map<string, messageDataObject>>(new Map());
     const [timeAfter, setTimeAfter] = React.useState<number>();
     // const [account, setAccount] = React.useState('');
     const [txSig, setTxSig] = React.useState('');
     const [displayTime, setDisplayTime] = React.useState(new Date());
 
-    let readerKey = 's'; //key for reader to decrypt message.
-    let messageMap: Map<string, messageDataObject> = new Map<string, messageDataObject>();
+    let readerKey = ''; //key for reader to decrypt message.
+    // let messageMap: Map<string, messageDataObject> = new Map<string, messageDataObject>();
     let readerMessageBox = document.getElementById('reader-message-box');
     
     const wallets = [
@@ -95,7 +96,7 @@ const Starter = () => {
         const transaction = new web3.Transaction();
         const instruction = new web3.TransactionInstruction({
             keys: [{ pubkey: publicKey, isSigner: true, isWritable: true }],
-            data: Buffer.from(await cm.encrypt(inputValue), "utf-8"),
+            data: Buffer.from(await cm.runSplitEncrypt(inputValue), "utf-8"),
             programId: new web3.PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
         });
 
@@ -104,7 +105,6 @@ const Starter = () => {
         try{
             const signature = await sendTransaction(transaction, quicknode_connection);
             setTxSig(signature);
-            console.log(signature);
         }
         catch (error){
             console.log(error);
@@ -115,7 +115,7 @@ const Starter = () => {
         }
 
         let targetTime = timeAfter? timeAfter:0;
-        targetTime += Date.now();
+        targetTime = targetTime * 1000 + Date.now();
         let newMessageObject: messageDataObject = {
             pKey: publicKey,
             unlockTime: targetTime
@@ -123,53 +123,60 @@ const Starter = () => {
         // setWriterAddress(publicKey.toString());
         // setConfirmedReaderAddress(readerAddress);
         // messageMap.set(readerAddress, publicKey.toString());
-        messageMap.set(readerAddress, newMessageObject);
-        console.log("Writing time is : " + newMessageObject.unlockTime);
+        setMessageMap(prevMap => new Map(prevMap.set(readerAddress, newMessageObject)));
+        // messageMap.set(readerAddress, newMessageObject);
     }
 
+    //hardcoded reader's key for demo
+    const theReaderPubKey = "Eh3UKDWz4RT7PRZGyZ7SLNAzyDFHXXrbi3q277UynTuh";
+
     async function checkMessage(){
-        if (!quicknode_connection || !publicKey) {
-            toast.error('Please connect your wallet.');
-            return;
-        }
-
-        let currentWalletAddr = publicKey?.toString();
-
-        if (currentWalletAddr === undefined){
+        if (theReaderPubKey === undefined){
             toast.error('Wallet address reading issue');
             return;
         }else{
-            if (messageMap.get(currentWalletAddr) === undefined) {
+            if (messageMap.get(theReaderPubKey) === undefined) {
                 //no message for this address
-                if (readerMessageBox){
-                    readerMessageBox.innerText = "Message box is empty..."
-                }
+                setReaderBoxMessage("Message box is empty...");
             }else{
                 //there is message for this address, check time for eligibility
                 // let writerPubKeyForFetching = new web3.PublicKey(Buffer.from(messageMap.get(currentWalletAddr), "hex"));
-                let msgObject = messageMap.get(currentWalletAddr);
+                let msgObject = messageMap.get(theReaderPubKey);
                 if (msgObject === undefined) return;
                 let signatureDetail = await quicknode_connection.getSignaturesForAddress(msgObject.pKey);
-                let fetchedMemo = signatureDetail[0].memo?.slice(5);
+                console.log("signature text length:" + signatureDetail[0].memo);
+                // let fetchedMemo = signatureDetail[0].memo?.slice(6);
+                let fetchedMemo = signatureDetail[0].memo?.split(" ")[1];
 
                 if (fetchedMemo){
                     console.log("Fetched encrypted memo text : " + fetchedMemo);
                 }else{
                     throw new Error("Empty string");
                 }
-                
-                if (msgObject.unlockTime >= Date.now()){
+                console.log(msgObject.unlockTime);
+                console.log(Date.now());
+                if (Date.now() >= msgObject.unlockTime){
                     //Send sym key to reader
                     readerKey = cm.getTestKey();
+                }else{
+                    readerKey = '';
                 }
 
-                fetchedMemo = (await (cm.decrypt(fetchedMemo, readerKey))).toString();
-
-                if (readerMessageBox){
-                    readerMessageBox.innerText = fetchedMemo;
-                }
+                fetchedMemo = (await (cm.runSplitDecrypt(fetchedMemo, readerKey))).toString();
+                
+                setReaderBoxMessage(fetchedMemo);
             }
         }
+    }
+
+    function doNothing(){}
+
+    function resetAll(){
+        setMessageMap(new Map());
+        // setTimeAfter(0);
+        // setReaderAddress('');
+        setInputValue('');
+        setReaderBoxMessage("...");
     }
     
     return (
@@ -214,15 +221,13 @@ const Starter = () => {
                                                             {
                                                                 color: 'black',
                                                                 width: '100%',
-                                                                height: '100px',
+                                                                height: '80px',
                                                                 padding: '10px',
                                                             }
                                                         }
-                                                        maxLength={300}
+                                                        maxLength={150}
                                                         value={inputValue}
                                                         onChange={handleInputChange}
-                                                        // value={inputValue}
-                                                        // onChange={e => setInputValue(e.target.value)}
                                                     />
                                             </li>
                                             <li>
@@ -231,7 +236,7 @@ const Starter = () => {
                                                         textAlign: 'right',
                                                         color: 'grey',
                                                         fontSize: '15px'
-                                                    }}>{inputValue.length}/300</p>
+                                                    }}>{inputValue.length}/150</p>
                                             </li>
                                             <li className='text-sm flex '>
                                                 <div style={{paddingRight: '10px'}}>To</div>
@@ -259,7 +264,7 @@ const Starter = () => {
                                             </li>
                                             <br />
                                             <div style={{ display: 'flex', justifyContent: 'center'}}>
-                                                <button onClick={handleTransaction}>SEND</button>
+                                                <button onClick={handleTransaction} style={{color: 'cyan'}}>SEND</button>
                                             </div>
                                             <br />
                                             <hr />
@@ -268,27 +273,30 @@ const Starter = () => {
                                             <h2 className='text-2xl font-semibold' style={{textAlign: 'center'}}>Reader's box</h2>
                                             <br />
                                                 <div style={{ display: 'flex', justifyContent: 'center'}}>
-                                                    <button onClick={checkMessage}>CHECK MESSAGE</button>
+                                                    <button onClick={checkMessage} style={{color: 'green'}}>CHECK MESSAGE</button>
                                                 </div>
-                                            <div className='mt-8 bg-[#222524] border-2 border-gray-500 rounded-lg p-2'>
-                                                <ul className='p-2'>
-                                                    <li className='flex justify-between'>
-                                                        <p className='tracking-wider' id='reader-message-box'
-                                                            style={
-                                                                {
-                                                                    minHeight: '100px',
-                                                                    
-                                                                }
+                                                <div className='mt-8 bg-[#222524] border-2 border-gray-500 rounded-lg p-2'>
+                                                    <textarea name="message" placeholder='...' style={
+                                                            {
+                                                                backgroundColor: 'black',
+                                                                color: 'white',
+                                                                width: '100%',
+                                                                height: '100px',
+                                                                padding: '5px',
                                                             }
-                                                        >
-                                                            Receiving message...
-                                                        </p>
-                                                    </li>
-                                                    {/* <li className='text-sm mt-4 flex justify-between'>
-                                                        <p className='tracking-wider'>Balance...</p>
-                                                    </li> */}
-                                                </ul>
-                                            </div>
+                                                        }
+                                                        maxLength={300}
+                                                        value={readerBoxMessage}
+                                                        onChange={doNothing}
+                                                    />
+                                                </div>
+                                                
+                                                <br />
+                                                <hr />
+                                                <br />
+                                                <div style={{ display: 'flex', justifyContent: 'center'}}>
+                                                    <button onClick={resetAll} style={{color: 'red'}}>RESET</button>
+                                                </div>
                                         </ul>
                                     </div>
                                 </div>
